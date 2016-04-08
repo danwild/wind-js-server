@@ -5,7 +5,7 @@ var fs = require('fs');
 var Q = require('q');
 
 var app = express();
-var port = process.env.PORT || 3000;
+var port = process.env.PORT || 7000;
 
 var baseDir ='http://nomads.ncep.noaa.gov/';
 var defaultParams ='cgi-bin/filter_gfs_1p00.pl?' +
