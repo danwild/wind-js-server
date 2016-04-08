@@ -25,31 +25,32 @@ app.listen(port, function(err){
 });
 
 app.get('/', function(req, res){
-    res.send('hello wind-js-server..');
+    res.send('hello wind-js-server.. go to /latest for wind data..');
 });
 
 app.get('/latest', function(req, res){
+
+	/**
+	 * Find and return the latest available 6 hourly pre-parsed JSON data
+	 *
+	 * @param targetMoment
+	 */
+	function sendLatest(targetMoment){
+
+		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
+		var fileName = __dirname +"/json-data/"+ stamp +".json";
+		res.setHeader('Content-Type', 'application/json');
+		res.sendFile(fileName, {}, function (err) {
+			if (err) {
+				console.log(err + stamp);
+				sendLatest(moment(targetMoment).subtract(6, 'hours'));
+			}
+		});
+	}
+
 	sendLatest(moment().utc());
+
 });
-
-/**
- *
- * Finds and returns the latest 6 hourly pre-parsed JSON data
- *
- * @param targetMoment
- */
-function sendLatest(targetMoment){
-
-	var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
-	var fileName = __dirname +"/json-data/"+ stamp +".json";
-	res.setHeader('Content-Type', 'application/json');
-	res.sendFile(fileName, {}, function (err) {
-		if (err) {
-			console.log(err + stamp);
-			sendLatest(moment(targetMoment).subtract(6, 'hours'));
-		}
-	});
-}
 
 /**
  *
@@ -65,12 +66,10 @@ setInterval(function(){
 
 	});
 
-}, 8000);
+}, 21600000);
 
 
 function convertGribToJson(stamp){
-
-	console.log('convertGribToJson');
 
 	var exec = require('child_process').exec, child;
 	child = exec('converter/bin/grib2json --data --output json-data/'+stamp+'.json --names --compact grib-data/'+stamp+'.t12z.pgrb2.1p00.f000',
@@ -84,16 +83,11 @@ function convertGribToJson(stamp){
 	        else {
 		        console.log("converted..");
 
-		        // TODO delete GRIB file...
-
-		        var exec = require( 'child_process' ).exec;
-		        var path = __dirname+'/grib-data/';
-
-		        exec( 'rm * ' + path);
+		        // don't keep raw grib data
+		        exec('rm grib-data/*');
 	        }
 	    });
 }
-
 
 /**
  *
@@ -108,23 +102,22 @@ function latestQuery(){
 	// create latest datetime stamp, e.g. 2016040612
 	var targetMoment = moment().utc();
 
-
 	function runQuery(targetMoment){
 
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
 		var query = baseDir + defaultParams + stamp;
-		console.log('QUERY: '+query);
 
-		var file = fs.createWriteStream("grib-data/"+stamp+".t12z.pgrb2.1p00.f000");
 		http.get(query, function(response) {
 
-			console.log('Got response: '+ response.statusCode);
+			console.log('QUERY: '+stamp+ ' got response: '+ response.statusCode);
 
 			if(response.statusCode != 200){
 				runQuery(moment(targetMoment).subtract(6, 'hours'));
 			}
 			else {
-				console.log('piping...');
+				console.log('\npiping...');
+
+				var file = fs.createWriteStream("grib-data/"+stamp+".t12z.pgrb2.1p00.f000");
 				response.pipe(file);
 
 				file.on('finish', function() {
