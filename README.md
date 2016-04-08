@@ -6,5 +6,3 @@ Crude demo rest service to expose [GRIB2](http://en.wikipedia.org/wiki/GRIB) win
 Contains a pre-packaged copy of [grib2json](https://github.com/cambecc/grib2json) for conversion.
 
 Resulting visual demo here: http://danwild.github.io/wind-js-leaflet/
-
-

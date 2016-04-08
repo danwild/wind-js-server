@@ -40,6 +40,8 @@ app.get('/latest', function(req, res){
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
 		var fileName = __dirname +"/json-data/"+ stamp +".json";
 		res.setHeader('Content-Type', 'application/json');
+		res.setHeader('Access-Control-Allow-Origin', 'http://localhost:63342/wind-js-leaflet/index.html');
+		res.setHeader('Access-Control-Allow-Origin', 'http://danwild.github.io/wind-js-leaflet/');
 		res.sendFile(fileName, {}, function (err) {
 			if (err) {
 				console.log(err + stamp);
