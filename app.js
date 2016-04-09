@@ -69,10 +69,13 @@ setInterval(function(){
 
 }, 21600000);
 
-
 function convertGribToJson(stamp){
 
+    // mk sure we've got somewhere to put output
+    checkDirectory('json-data');
+
 	var exec = require('child_process').exec, child;
+
 	child = exec('converter/bin/grib2json --data --output json-data/'+stamp+'.json --names --compact grib-data/'+stamp+'.t12z.pgrb2.1p00.f000',
 	    {maxBuffer: 500*1024},
 	    function (error, stdout, stderr){
@@ -105,6 +108,11 @@ function latestQuery(){
 
 	function runQuery(targetMoment){
 
+        // bail if it's not looking good..
+        if ( moment.utc().diff(targetMoment, 'days') > 3){
+            return;
+        }
+
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
 		var query = baseDir + defaultParams + stamp;
 
@@ -118,9 +126,12 @@ function latestQuery(){
 			else {
 				console.log('\npiping...');
 
+                // mk sure we've got somewhere to put output
+                checkDirectory('grib-data');
+
+                // pipe the file, resolve the valid time stamp
 				var file = fs.createWriteStream("grib-data/"+stamp+".t12z.pgrb2.1p00.f000");
 				response.pipe(file);
-
 				file.on('finish', function() {
 					file.close();
 					deferred.resolve({stamp: stamp});
@@ -149,4 +160,12 @@ function roundHours(hours, interval){
 		var result = (Math.floor(hours / interval) * interval);
 		return result < 10 ? '0' + result.toString() : result;
 	}
+}
+
+function checkDirectory(directory) {
+    try {
+        fs.statSync(directory);
+    } catch(e) {
+        fs.mkdirSync(directory);
+    }
 }
