@@ -55,7 +55,7 @@ app.get('/latest', function(req, res){
 
 /**
  *
- * Every 6 hours we pull in grib data and archive as json
+ * 6 hourly grib data is available, we'll check hourly just in case
  *
  */
 setInterval(function(){
@@ -67,7 +67,7 @@ setInterval(function(){
 
 	});
 
-}, 21600000);
+}, 3600000);
 
 function convertGribToJson(stamp){
 
