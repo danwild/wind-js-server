@@ -32,7 +32,7 @@ app.get('/latest', cors(corsOptions), function(req, res){
 	/**
 	 * Find and return the latest available 6 hourly pre-parsed JSON data
 	 *
-	 * @param targetMoment
+	 * @param targetMoment {Object} UTC moment
 	 */
 	function sendLatest(targetMoment){
 
@@ -42,7 +42,7 @@ app.get('/latest', cors(corsOptions), function(req, res){
 		res.setHeader('Content-Type', 'application/json');
 		res.sendFile(fileName, {}, function (err) {
 			if (err) {
-				// console.log(stamp +' doesnt exist yet, trying previous interval..');
+				console.log(stamp +' doesnt exist yet, trying previous interval..');
 				sendLatest(moment(targetMoment).subtract(6, 'hours'));
 			}
 		});
@@ -76,7 +76,6 @@ function run(targetMoment){
 	});
 }
 
-
 /**
  *
  * Finds and returns the latest 6 hourly GRIB2 data from NOAAA
@@ -91,7 +90,7 @@ function getGribData(targetMoment){
 
         // only go 2 weeks deep
 		if (moment.utc().diff(targetMoment, 'days') > 14){
-	        // console.log('hit limit, harvest complete or there is a big gap in data..');
+	        console.log('hit limit, harvest complete or there is a big gap in data..');
             return;
         }
 
@@ -101,6 +100,8 @@ function getGribData(targetMoment){
 			qs: {
 				file: 'gfs.t'+ roundHours(moment(targetMoment).hour(), 6) +'z.pgrb2.1p00.f000',
 				lev_10_m_above_ground: 'on',
+				lev_surface: 'on',
+				var_TMP: 'on',
 				var_UGRD: 'on',
 				var_VGRD: 'on',
 				leftlon: 0,
@@ -111,12 +112,12 @@ function getGribData(targetMoment){
 			}
 
 		}).on('error', function(err){
-			// console.log(err);
+			console.log(err);
 			runQuery(moment(targetMoment).subtract(6, 'hours'));
 
 		}).on('response', function(response) {
 
-			// console.log('response '+response.statusCode + ' | '+stamp);
+			console.log('response '+response.statusCode + ' | '+stamp);
 
 			if(response.statusCode != 200){
 				runQuery(moment(targetMoment).subtract(6, 'hours'));
@@ -126,7 +127,7 @@ function getGribData(targetMoment){
 				// don't rewrite stamps
 				if(!checkPath('json-data/'+ stamp +'.json', false)) {
 
-					// console.log('piping ' + stamp);
+					console.log('piping ' + stamp);
 
 					// mk sure we've got somewhere to put output
 					checkPath('grib-data', true);
@@ -141,7 +142,7 @@ function getGribData(targetMoment){
 
 				}
 				else {
-					// console.log('already have '+ stamp +', not looking further');
+					console.log('already have '+ stamp +', not looking further');
 					deferred.resolve({stamp: false, targetMoment: false});
 				}
 			}
@@ -165,11 +166,11 @@ function convertGribToJson(stamp, targetMoment){
 		function (error, stdout, stderr){
 
 			if(error){
-				// console.log('exec error: ' + error);
+				console.log('exec error: ' + error);
 			}
 
 			else {
-				// console.log("converted..");
+				console.log("converted..");
 
 				// don't keep raw grib data
 				exec('rm grib-data/*');
@@ -180,12 +181,12 @@ function convertGribToJson(stamp, targetMoment){
 
 				if(!checkPath('json-data/'+ prevStamp +'.json', false)){
 
-					// console.log("attempting to harvest older data "+ stamp);
+					console.log("attempting to harvest older data "+ stamp);
 					run(prevMoment);
 				}
 
 				else {
-					// console.log('got older, no need to harvest further');
+					console.log('got older, no need to harvest further');
 				}
 			}
 		});
