@@ -4,20 +4,30 @@ var http = require('http');
 var request = require('request');
 var fs = require('fs');
 var Q = require('q');
+var cors = require('cors');
 
 var app = express();
 var port = process.env.PORT || 7000;
 var baseDir ='http://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_1p00.pl';
 
+// cors config
+var whitelist = ['http://localhost:63342', 'http://danwild.github.io'];
+var corsOptions = {
+	origin: function(origin, callback){
+		var originIsWhitelisted = whitelist.indexOf(origin) !== -1;
+		callback(null, originIsWhitelisted);
+	}
+};
+
 app.listen(port, function(err){
     console.log("running server on port "+ port);
 });
 
-app.get('/', function(req, res){
+app.get('/', cors(corsOptions), function(req, res){
     res.send('hello wind-js-server.. go to /latest for wind data..');
 });
 
-app.get('/latest', function(req, res){
+app.get('/latest', cors(corsOptions), function(req, res){
 
 	/**
 	 * Find and return the latest available 6 hourly pre-parsed JSON data
@@ -28,12 +38,8 @@ app.get('/latest', function(req, res){
 
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
 		var fileName = __dirname +"/json-data/"+ stamp +".json";
+
 		res.setHeader('Content-Type', 'application/json');
-
-		// demo
-		res.setHeader('Access-Control-Allow-Origin', 'http://danwild.github.io');
-		//res.setHeader('Access-Control-Allow-Origin', '*');
-
 		res.sendFile(fileName, {}, function (err) {
 			if (err) {
 				// console.log(stamp +' doesnt exist yet, trying previous interval..');
