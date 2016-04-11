@@ -31,8 +31,8 @@ app.get('/latest', function(req, res){
 		res.setHeader('Content-Type', 'application/json');
 
 		// demo
-		//res.setHeader('Access-Control-Allow-Origin', 'http://danwild.github.io');
-		res.setHeader('Access-Control-Allow-Origin', '*');
+		res.setHeader('Access-Control-Allow-Origin', 'http://danwild.github.io');
+		//res.setHeader('Access-Control-Allow-Origin', '*');
 
 		res.sendFile(fileName, {}, function (err) {
 			if (err) {
