@@ -1,24 +1,13 @@
 var express = require("express");
 var moment = require("moment");
 var http = require('http');
+var request = require('request');
 var fs = require('fs');
 var Q = require('q');
 
 var app = express();
 var port = process.env.PORT || 7000;
-
-var baseDir ='http://nomads.ncep.noaa.gov/';
-var defaultParams ='cgi-bin/filter_gfs_1p00.pl?' +
-	'file=gfs.t12z.pgrb2.1p00.f000&' +
-	'lev_10_m_above_ground=on&' +
-	'lev_surface=on&var_TMP=on&' +
-	'var_UGRD=on&' +
-	'var_VGRD=on&' +
-	'leftlon=0&' +
-	'rightlon=360&' +
-	'toplat=90&' +
-	'bottomlat=-90&' +
-	'dir=%2Fgfs.';
+var baseDir ='http://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_1p00.pl';
 
 app.listen(port, function(err){
     console.log("running server on port "+ port);
@@ -40,10 +29,14 @@ app.get('/latest', function(req, res){
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
 		var fileName = __dirname +"/json-data/"+ stamp +".json";
 		res.setHeader('Content-Type', 'application/json');
-		res.setHeader('Access-Control-Allow-Origin', 'http://danwild.github.io');
+
+		// demo
+		//res.setHeader('Access-Control-Allow-Origin', 'http://danwild.github.io');
+		res.setHeader('Access-Control-Allow-Origin', '*');
+
 		res.sendFile(fileName, {}, function (err) {
 			if (err) {
-				console.log(err + stamp);
+				console.log(stamp +' doesnt exist yet, trying previous interval..');
 				sendLatest(moment(targetMoment).subtract(6, 'hours'));
 			}
 		});
@@ -55,43 +48,28 @@ app.get('/latest', function(req, res){
 
 /**
  *
- * 6 hourly grib data is available, we'll check hourly just in case
+ * Ping for new data every 15 mins
  *
  */
 setInterval(function(){
 
-	latestQuery().then(function(response){
+	run(moment.utc());
 
-		// run grib2json
-		convertGribToJson(response.stamp);
+}, 900000);
 
+/**
+ *
+ * @param targetMoment {Object} moment to check for new data
+ */
+function run(targetMoment){
+
+	getGribData(targetMoment).then(function(response){
+		if(response.stamp){
+			convertGribToJson(response.stamp, response.targetMoment);
+		}
 	});
-
-}, 3600000);
-
-function convertGribToJson(stamp){
-
-    // mk sure we've got somewhere to put output
-    checkDirectory('json-data');
-
-	var exec = require('child_process').exec, child;
-
-	child = exec('converter/bin/grib2json --data --output json-data/'+stamp+'.json --names --compact grib-data/'+stamp+'.t12z.pgrb2.1p00.f000',
-	    {maxBuffer: 500*1024},
-	    function (error, stdout, stderr){
-
-	        if(error){
-	            console.log('exec error: ' + error);
-		    }
-
-	        else {
-		        console.log("converted..");
-
-		        // don't keep raw grib data
-		        exec('rm grib-data/*');
-	        }
-	    });
 }
+
 
 /**
  *
@@ -99,44 +77,67 @@ function convertGribToJson(stamp){
  *
  * @returns {*|promise}
  */
-function latestQuery(){
+function getGribData(targetMoment){
 
 	var deferred = Q.defer();
 
-	// create latest datetime stamp, e.g. 2016040612
-	var targetMoment = moment().utc();
-
 	function runQuery(targetMoment){
 
-        // bail if it's not looking good..
-        if ( moment.utc().diff(targetMoment, 'days') > 3){
+        // only go 2 weeks deep
+		if (moment.utc().diff(targetMoment, 'days') > 14){
+	        console.log('hit limit, harvest complete or there is a big gap in data..');
             return;
         }
 
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
-		var query = baseDir + defaultParams + stamp;
+		request.get({
+			url: baseDir,
+			qs: {
+				file: 'gfs.t'+ roundHours(moment(targetMoment).hour(), 6) +'z.pgrb2.1p00.f000',
+				lev_10_m_above_ground: 'on',
+				var_UGRD: 'on',
+				var_VGRD: 'on',
+				leftlon: 0,
+				rightlon: 360,
+				toplat: 90,
+				bottomlat: -90,
+				dir: '/gfs.'+stamp
+			}
 
-		http.get(query, function(response) {
+		}).on('error', function(err){
+			console.log(err);
+			runQuery(moment(targetMoment).subtract(6, 'hours'));
 
-			console.log('QUERY: '+stamp+ ' got response: '+ response.statusCode);
+		}).on('response', function(response) {
+
+			console.log('response '+response.statusCode + ' | '+stamp);
 
 			if(response.statusCode != 200){
 				runQuery(moment(targetMoment).subtract(6, 'hours'));
 			}
+
 			else {
-				console.log('\npiping...');
+				// don't rewrite stamps
+				if(!checkPath('json-data/'+ stamp +'.json', false)) {
 
-                // mk sure we've got somewhere to put output
-                checkDirectory('grib-data');
+					console.log('piping ' + stamp);
 
-                // pipe the file, resolve the valid time stamp
-				var file = fs.createWriteStream("grib-data/"+stamp+".t12z.pgrb2.1p00.f000");
-				response.pipe(file);
-				file.on('finish', function() {
-					file.close();
-					deferred.resolve({stamp: stamp});
-				});
+					// mk sure we've got somewhere to put output
+					checkPath('grib-data', true);
 
+					// pipe the file, resolve the valid time stamp
+					var file = fs.createWriteStream("grib-data/"+stamp+".f000");
+					response.pipe(file);
+					file.on('finish', function() {
+						file.close();
+						deferred.resolve({stamp: stamp, targetMoment: targetMoment});
+					});
+
+				}
+				else {
+					console.log('already have '+ stamp +', not looking further');
+					deferred.resolve({stamp: false, targetMoment: false});
+				}
 			}
 		});
 
@@ -146,10 +147,48 @@ function latestQuery(){
 	return deferred.promise;
 }
 
+function convertGribToJson(stamp, targetMoment){
+
+	// mk sure we've got somewhere to put output
+	checkPath('json-data', true);
+
+	var exec = require('child_process').exec, child;
+
+	child = exec('converter/bin/grib2json --data --output json-data/'+stamp+'.json --names --compact grib-data/'+stamp+'.f000',
+		{maxBuffer: 500*1024},
+		function (error, stdout, stderr){
+
+			if(error){
+				console.log('exec error: ' + error);
+			}
+
+			else {
+				console.log("converted..");
+
+				// don't keep raw grib data
+				exec('rm grib-data/*');
+
+				// if we don't have older stamp, try and harvest one
+				var prevMoment = moment(targetMoment).subtract(6, 'hours');
+				var prevStamp = prevMoment.format('YYYYMMDD') + roundHours(prevMoment.hour(), 6);
+
+				if(!checkPath('json-data/'+ prevStamp +'.json', false)){
+
+					console.log("attempting to harvest older data "+ stamp);
+					run(prevMoment);
+				}
+
+				else {
+					console.log('got older, no need to harvest further');
+				}
+			}
+		});
+}
+
 /**
  *
  * Round hours to expected interval, e.g. we're currently using 6 hourly interval
- * so round to 00 || 06 || 12 || 18
+ * i.e. 00 || 06 || 12 || 18
  *
  * @param hours
  * @param interval
@@ -162,10 +201,25 @@ function roundHours(hours, interval){
 	}
 }
 
-function checkDirectory(directory) {
+/**
+ * Sync check if path or file exists
+ *
+ * @param path {string}
+ * @param mkdir {boolean} create dir if doesn't exist
+ * @returns {boolean}
+ */
+function checkPath(path, mkdir) {
     try {
-        fs.statSync(directory);
+	    fs.statSync(path);
+	    return true;
+
     } catch(e) {
-        fs.mkdirSync(directory);
+        if(mkdir){
+	        fs.mkdirSync(path);
+        }
+	    return false;
     }
 }
+
+// init harvest
+run(moment.utc());
