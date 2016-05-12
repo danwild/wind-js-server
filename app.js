@@ -27,6 +27,10 @@ app.get('/', cors(corsOptions), function(req, res){
     res.send('hello wind-js-server.. go to /latest for wind data..');
 });
 
+app.get('/alive', cors(corsOptions), function(req, res){
+	res.send('wind-js-server is alive');
+});
+
 app.get('/latest', cors(corsOptions), function(req, res){
 
 	/**
