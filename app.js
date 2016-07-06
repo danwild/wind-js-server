@@ -11,7 +11,15 @@ var port = process.env.PORT || 7000;
 var baseDir ='http://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_1p00.pl';
 
 // cors config
-var whitelist = ['http://localhost:63342', 'http://localhost:3000', 'http://danwild.github.io', 'http://portal.ereefs.info'];
+var whitelist = [
+	'http://localhost:63342',
+	'http://localhost:3000',
+	'http://localhost:4000',
+	'http://danwild.github.io',
+	'http://portal.ereefs.info',
+	'http://52.65.8.160'
+];
+
 var corsOptions = {
 	origin: function(origin, callback){
 		var originIsWhitelisted = whitelist.indexOf(origin) !== -1;
