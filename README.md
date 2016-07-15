@@ -7,3 +7,6 @@ Consumed in [wind-js-leaflet](https://github.com/danwild/wind-js-leaflet).
 Contains a pre-packaged copy of [grib2json](https://github.com/cambecc/grib2json) for conversion.
 
 Data Vis demo here: http://danwild.github.io/wind-js-leaflet/
+
+## License
+MIT License (MIT)
