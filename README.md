@@ -1,6 +1,6 @@
 # wind-js-server
 
-Demo rest service to expose [GRIB2](http://en.wikipedia.org/wiki/GRIB) wind forecast data 
+Simple demo rest service to expose [GRIB2](http://en.wikipedia.org/wiki/GRIB) wind forecast data 
 (1 degree, 6 hourly from [NOAA](http://nomads.ncep.noaa.gov/)) as JSON. <br/>
 
 Consumed in [wind-js-leaflet](https://github.com/danwild/wind-js-leaflet).
