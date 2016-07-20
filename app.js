@@ -147,7 +147,7 @@ function getGribData(targetMoment){
 	function runQuery(targetMoment){
 
         // only go 2 weeks deep
-		if (moment.utc().diff(targetMoment, 'days') > 14){
+		if (moment.utc().diff(targetMoment, 'days') > 30){
 	        // console.log('hit limit, harvest complete or there is a big gap in data..');
             return;
         }
