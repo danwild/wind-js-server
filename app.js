@@ -18,7 +18,8 @@ var whitelist = [
 	'http://danwild.github.io',
 	'http://portal.ereefs.info',
 	'http://52.65.8.160',
-	'http://oa-21-mel.it.csiro.au'
+	'http://oa-21-mel.it.csiro.au',
+	'https://oa-21-mel.it.csiro.au'
 ];
 
 var corsOptions = {
