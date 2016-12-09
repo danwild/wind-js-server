@@ -20,7 +20,8 @@ var whitelist = [
 	'http://52.65.8.160',
 	'http://oa-21-mel.it.csiro.au',
 	'https://oa-21-mel.it.csiro.au',
-	'http://52.65.28.172'
+	'http://52.65.28.172',
+	'http://lw.oznome.csiro.au:3000'
 ];
 
 var corsOptions = {
