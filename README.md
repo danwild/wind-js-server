@@ -16,6 +16,7 @@ To get to production; you should improve upon this or build your own.
 (assumes you have node and npm installed)
 
 ```bash
+# from project root:
 npm install
 npm start
 ```
