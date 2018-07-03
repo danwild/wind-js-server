@@ -1,9 +1,10 @@
 {
   "name": "wind-js-server",
-  "version": "0.0.1",
-  "description": "Crude rest service to expose Grib2 wind forecast data as JSON",
+  "version": "0.0.2",
+  "description": "Demo rest service to expose Grib2 wind forecast data as JSON",
   "main": "app.js",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
