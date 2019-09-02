@@ -66,8 +66,7 @@ app.get('/nearest', cors(corsOptions), function(req, res, next){
 
 	var time = req.query.timeIso;
 	var limit = req.query.searchLimit;
-	debug2: channel 0: window 998872 sent adjust 49704
-var searchForwards = false;
+	var searchForwards = false;
 
 	/**
 	 * Find and return the nearest available 6 hourly pre-parsed JSON data
