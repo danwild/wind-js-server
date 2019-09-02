@@ -151,22 +151,33 @@ function getGribData(targetMoment){
         }
 
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
+		var queryString = {
+		    file: 'gfs.t'+ roundHours(moment(targetMoment).hour(), 6) +'z.pgrb2.1p00.f000',
+		    lev_10_m_above_ground: 'on',
+		    lev_surface: 'on',
+		    var_TMP: 'on',
+		    var_UGRD: 'on',
+		    var_VGRD: 'on',
+		    leftlon: 0,
+		    rightlon: 360,
+		    toplat: 90,
+		    bottomlat: -90,
+		    dir: '/gfs.' + moment(targetMoment).format('YYYYMMDD') + '/' + roundHours(moment(targetMoment).hour(), 6)
+		};
+		const qsConstructor = qs => {
+		    let str = '';
+
+		    for (let i in qs) {
+		        str += `${i}=${qs[i]}&`;
+		    }
+
+		    return str;
+                };
+
+		console.log('GET', baseDir + '?' + qsConstructor(queryString));
 		request.get({
 			url: baseDir,
-			qs: {
-				file: 'gfs.t'+ roundHours(moment(targetMoment).hour(), 6) +'z.pgrb2.1p00.f000',
-				lev_10_m_above_ground: 'on',
-				lev_surface: 'on',
-				var_TMP: 'on',
-				var_UGRD: 'on',
-				var_VGRD: 'on',
-				leftlon: 0,
-				rightlon: 360,
-				toplat: 90,
-				bottomlat: -90,
-				dir: '/gfs.'+stamp
-			}
-
+			qs: queryString
 		}).on('error', function(err){
 			// console.log(err);
 			runQuery(moment(targetMoment).subtract(6, 'hours'));
