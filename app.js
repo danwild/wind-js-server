@@ -66,7 +66,8 @@ app.get('/nearest', cors(corsOptions), function(req, res, next){
 
 	var time = req.query.timeIso;
 	var limit = req.query.searchLimit;
-	var searchForwards = false;
+	debug2: channel 0: window 998872 sent adjust 49704
+var searchForwards = false;
 
 	/**
 	 * Find and return the nearest available 6 hourly pre-parsed JSON data
@@ -151,22 +152,33 @@ function getGribData(targetMoment){
         }
 
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
+                var queryString = {
+                    file: 'gfs.t'+ roundHours(moment(targetMoment).hour(), 6) +'z.pgrb2.1p00.f000',
+                    lev_10_m_above_ground: 'on',
+                    lev_surface: 'on',
+                    var_TMP: 'on',
+                    var_UGRD: 'on',
+                    var_VGRD: 'on',
+                    leftlon: 0,
+                    rightlon: 360,
+                    toplat: 90,
+                    bottomlat: -90,
+                    dir: '/gfs.' + moment(targetMoment).format('YYYYMMDD') + '/' + roundHours(moment(targetMoment).hour(), 6)
+                };
+                const qsConstructor = qs => {
+                    let str = '';
+
+                    for (let i in qs) {
+                        str += `${i}=${qs[i]}&`;
+                    }
+
+                    return str;
+                };
+
+		console.log('GET', baseDir + '?' + qsConstructor(queryString));
 		request.get({
 			url: baseDir,
-			qs: {
-				file: 'gfs.t'+ roundHours(moment(targetMoment).hour(), 6) +'z.pgrb2.1p00.f000',
-				lev_10_m_above_ground: 'on',
-				lev_surface: 'on',
-				var_TMP: 'on',
-				var_UGRD: 'on',
-				var_VGRD: 'on',
-				leftlon: 0,
-				rightlon: 360,
-				toplat: 90,
-				bottomlat: -90,
-				dir: '/gfs.'+stamp
-			}
-
+			qs: queryString
 		}).on('error', function(err){
 			// console.log(err);
 			runQuery(moment(targetMoment).subtract(6, 'hours'));
