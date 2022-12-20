@@ -151,6 +151,8 @@ function getGribData(targetMoment){
         }
 
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
+		var dir = '/gfs.' + moment(targetMoment).format('YYYYMMDD') + '/' + roundHours(moment(targetMoment).hour(), 6) + '/atmos';
+
 		request.get({
 			url: baseDir,
 			qs: {
@@ -164,7 +166,7 @@ function getGribData(targetMoment){
 				rightlon: 360,
 				toplat: 90,
 				bottomlat: -90,
-				dir: '/gfs.'+stamp
+				dir
 			}
 
 		}).on('error', function(err){
