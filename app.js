@@ -8,7 +8,7 @@ var cors = require('cors');
 
 var app = express();
 var port = process.env.PORT || 7000;
-var baseDir ='http://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_1p00.pl';
+var baseDir ='https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_1p00.pl';
 
 // cors config
 var whitelist = [
@@ -151,24 +151,27 @@ function getGribData(targetMoment){
         }
 
 		var stamp = moment(targetMoment).format('YYYYMMDD') + roundHours(moment(targetMoment).hour(), 6);
-		request.get({
-			url: baseDir,
-			qs: {
-				file: 'gfs.t'+ roundHours(moment(targetMoment).hour(), 6) +'z.pgrb2.1p00.f000',
-				lev_10_m_above_ground: 'on',
-				lev_surface: 'on',
-				var_TMP: 'on',
-				var_UGRD: 'on',
-				var_VGRD: 'on',
-				leftlon: 0,
-				rightlon: 360,
-				toplat: 90,
-				bottomlat: -90,
-				dir: '/gfs.'+stamp
-			}
 
-		}).on('error', function(err){
-			// console.log(err);
+		request.get(
+			requestparams = {
+				url: baseDir,
+				qs: {
+					file: 'gfs.t'+ roundHours(moment(targetMoment).hour(), 6) +'z.pgrb2.1p00.f000',
+					lev_10_m_above_ground: 'on',
+					lev_surface: 'on',
+					var_TMP: 'on',
+					var_UGRD: 'on',
+					var_VGRD: 'on',
+					leftlon: 0,
+					rightlon: 360,
+					toplat: 90,
+					bottomlat: -90,
+					dir: '/gfs.'+ moment(targetMoment).format('YYYYMMDD') + '/' + roundHours(moment(targetMoment).hour(), 6) + '/atmos',
+				}
+	
+			}
+		).on('error', function(err){
+			//console.log(err);
 			runQuery(moment(targetMoment).subtract(6, 'hours'));
 
 		}).on('response', function(response) {
@@ -190,6 +193,7 @@ function getGribData(targetMoment){
 
 					// pipe the file, resolve the valid time stamp
 					var file = fs.createWriteStream("grib-data/"+stamp+".f000");
+					
 					response.pipe(file);
 					file.on('finish', function() {
 						file.close();
